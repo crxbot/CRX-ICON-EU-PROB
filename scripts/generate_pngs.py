@@ -92,19 +92,11 @@ wind_colors = ListedColormap([
 ])
 wind_norm = BoundaryNorm(wind_bounds, wind_colors.N)
 
-snow_bounds = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99]
-snow_colors = ListedColormap([
-    "#FE9226", "#FFC02B", "#FFEE32", "#DDE02D", "#BBD629",
-    "#9AC925", "#79BC21", "#37A319", "#367C40",
-    "#366754", "#4A3E7C", "#593192"
-])
-
-snow_norm = BoundaryNorm(snow_bounds, snow_colors.N)
 
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"temp30_eu":30,"temp20_eu":20,"temp0_eu":0,"tp10":10.0, "tp30":30.0, "tp100":100.0, "tp10_eu":10.0, "tp30_eu":30.0, "tp100_eu":100.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "wind60_eu":60.0, "wind90_eu":90.0, "wind120_eu":120.0, "snow1":1.0, "snow5":10.0, "snow10":20.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"temp30_eu":30,"temp20_eu":20,"temp0_eu":0,"tp10":10.0, "tp30":30.0, "tp100":100.0, "tp10_eu":10.0, "tp30_eu":30.0, "tp100_eu":100.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "wind60_eu":60.0, "wind90_eu":90.0, "wind120_eu":120.0}
 
 # --------------------------
 # Kartenparameter
@@ -135,7 +127,7 @@ if isinstance(lat_grid, np.ma.MaskedArray):
 print(f"Grid hat {len(lon_grid)} Punkte")
 
 # Erstelle reguläres Grid für Interpolation
-if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu", "snow1_eu", "snow10_eu", "snow20_eu"]:
+if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
     grid_resolution = 0.13  # ~12km
     lon_min, lon_max, lat_min, lat_max = extent_eu
     buffer = grid_resolution * 20
@@ -179,15 +171,10 @@ for filename in sorted(os.listdir(data_dir)):
         # Akkumulation direkt
         data = ds["tp"].values  # shape: (member, npoints)
     elif var_type in ["wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu"]:
-        if "max_i10fg" not in ds:
+        if "fg10" not in ds:
             print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
             continue
-        data = ds["max_i10fg"].values * 3.6  # m/s zu km/h
-    elif var_type in ["snow1", "snow10", "snow20", "snow1_eu", "snow10_eu", "snow20_eu"]:
-        if "sde" not in ds:
-            print(f"Keine Schneehöhenvariable in {filename}")
-            continue
-        data = ds["sde"].values * 100
+        data = ds["fg10"].values * 3.6  # m/s zu km/h
 
     else:
         print(f"Unbekannter var_type {var_type}")
@@ -213,7 +200,7 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     # Figure erstellen
     # --------------------------
-    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu", "snow1_eu", "snow10_eu", "snow20_eu"]:
+    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
         scale = 0.9
         fig = plt.figure(figsize=(FIG_W_PX/100*scale, FIG_H_PX/100*scale), dpi=100)
         shift_up = 0.02
@@ -253,16 +240,8 @@ for filename in sorted(os.listdir(data_dir)):
     elif var_type in ["wind60_eu", "wind90_eu", "wind120_eu"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
-    elif var_type in ["snow1", "snow10", "snow20"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
-        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
-                        cmap=snow_colors, norm=snow_norm, shading="auto")
-    elif var_type in ["snow1_eu", "snow10_eu", "snow20_eu"]:
-        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
-                        cmap=snow_colors, norm=snow_norm, shading="auto")
-        
 
-    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu", "snow1_eu", "snow10_eu", "snow20_eu"]:
+    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
         ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
         ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
 
@@ -296,8 +275,8 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     legend_h_px = 50
     legend_bottom_px = 45
-    if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu", "tp10", "tp30", "tp100", "tp10_eu", "tp30_eu", "tp100_eu", "wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu", "snow1", "snow10", "snow20", "snow1_eu", "snow10_eu", "snow20_eu"]:
-        bounds = temp_bounds if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu"] else tp_bounds if var_type in ["tp10", "tp30", "tp100", "tp10_eu", "tp30_eU", "tp100_eu"] else wind_bounds if var_type in ["wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu"] else snow_bounds
+    if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu", "tp10", "tp30", "tp100", "tp10_eu", "tp30_eu", "tp100_eu", "wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu"]:
+        bounds = temp_bounds if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu"] else tp_bounds if var_type in ["tp10", "tp30", "tp100", "tp10_eu", "tp30_eU", "tp100_eu"] else wind_bounds
         cbar_ax = fig.add_axes([0.03, legend_bottom_px / FIG_H_PX, 0.94, legend_h_px / FIG_H_PX])
         cbar = fig.colorbar(im, cax=cbar_ax, orientation="horizontal", ticks=bounds)
         cbar.ax.tick_params(colors="black", labelsize=7)
@@ -365,12 +344,6 @@ for filename in sorted(os.listdir(data_dir)):
         "wind60_eu": "Windböen >60 km/h (%), Europa",
         "wind90_eu": "Windböen >90 km/h (%), Europa",
         "wind120_eu": "Windböen >120 km/h (%), Europa",
-        "snow1": "Schneehöhe >1 cm (%)",
-        "snow10": "Schneehöhe >10 cm (%)",
-        "snow20": "Schneehöhe >20 cm (%)",
-        "snow1_eu": "Schneehöhe >1 cm (%), Europa",
-        "snow10_eu": "Schneehöhe >10 cm (%), Europa",
-        "snow20_eu": "Schneehöhe >20 cm (%), Europa"
     }
     left_text = footer_texts.get(var_type, var_type)
     if run_time_utc is not None:
