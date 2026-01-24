@@ -137,7 +137,7 @@ if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100
     lat_reg = np.linspace(lat_min - buffer, lat_max + buffer, ny + 15)
     lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
 else:
-    grid_resolution = 0.025  # ~2,5km
+    grid_resolution = 0.065  # ~2,5km
     lon_min, lon_max, lat_min, lat_max = extent
     lon_reg = np.arange(lon_min, lon_max + grid_resolution, grid_resolution)
     lat_reg = np.arange(lat_min, lat_max + grid_resolution, grid_resolution)
