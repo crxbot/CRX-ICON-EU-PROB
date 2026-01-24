@@ -84,6 +84,7 @@ jobs:
             if [ -f "t2m_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f t2m_${i_padded}.grib2.bz2
             fi
+          '
 
       - name: Download tp GRIB2 files
         run: |
