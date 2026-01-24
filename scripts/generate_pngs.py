@@ -149,7 +149,7 @@ if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100
     lat_reg = np.linspace(lat_min - buffer, lat_max + buffer, ny + 15)
     lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
 else:
-    grid_resolution = 0.065  # ~6km
+    grid_resolution = 0.025  # ~2,5km
     lon_min, lon_max, lat_min, lat_max = extent
     lon_reg = np.arange(lon_min, lon_max + grid_resolution, grid_resolution)
     lat_reg = np.arange(lat_min, lat_max + grid_resolution, grid_resolution)
@@ -251,7 +251,7 @@ for filename in sorted(os.listdir(data_dir)):
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=tp_colors, norm=tp_norm, shading="auto")
     elif var_type in ["wind60", "wind90", "wind120"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
     elif var_type in ["wind60_eu", "wind90_eu", "wind120_eu"]:
