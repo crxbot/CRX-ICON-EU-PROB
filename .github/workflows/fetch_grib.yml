@@ -61,7 +61,7 @@ jobs:
           cd data/t2m
           seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_t_2m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_t_2m.grib2.bz2"
             wget -O t2m_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "t2m_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f t2m_${i_padded}.grib2.bz2
@@ -70,7 +70,7 @@ jobs:
 
           seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_t_2m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_t_2m.grib2.bz2"
             wget -O t2m_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "t2m_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f t2m_${i_padded}.grib2.bz2
@@ -83,7 +83,7 @@ jobs:
           cd data/tp
           seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_tot_prec.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_tot_prec.grib2.bz2"
             wget -O tp_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "tp_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f tp_${i_padded}.grib2.bz2
@@ -92,7 +92,7 @@ jobs:
 
           seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_tot_prec.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_tot_prec.grib2.bz2"
             wget -O tp_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "tp_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f tp_${i_padded}.grib2.bz2
@@ -103,9 +103,9 @@ jobs:
         run: |
           mkdir -p data/wind
           cd data/wind
-          seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
+          seq 1 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_vmax_10m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_vmax_10m.grib2.bz2"
             wget -O wind_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "wind_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f wind_${i_padded}.grib2.bz2
@@ -114,7 +114,7 @@ jobs:
 
           seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_vmax_10m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_vmax_10m.grib2.bz2"
             wget -O wind_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "wind_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f wind_${i_padded}.grib2.bz2
