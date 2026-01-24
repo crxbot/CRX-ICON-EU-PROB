@@ -237,14 +237,14 @@ for filename in sorted(os.listdir(data_dir)):
         ax.set_aspect('auto')
 
     if var_type in ["temp30","temp20","temp0"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=temp_colors, norm=temp_norm, shading="auto")
     elif var_type in ["temp30_eu","temp20_eu","temp0_eu"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=temp_colors, norm=temp_norm, shading="auto")
     elif var_type in ["tp10", "tp30", "tp100"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=tp_colors, norm=tp_norm, shading="auto")
     elif var_type in ["tp10_eu", "tp30_eu", "tp100_eu"]:
@@ -258,7 +258,7 @@ for filename in sorted(os.listdir(data_dir)):
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
     elif var_type in ["snow1", "snow10", "snow20"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=snow_colors, norm=snow_norm, shading="auto")
     elif var_type in ["snow1_eu", "snow10_eu", "snow20_eu"]:
