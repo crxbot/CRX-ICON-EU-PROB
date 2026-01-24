@@ -1,4 +1,4 @@
-name: Fetch ICON-D2-EPS GRIB2 and Generate PNGs
+name: Fetch ICON-EU-EPS GRIB2 and Generate PNGs
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.D2_PAT }}
+          token: ${{ secrets.EU_PAT }}
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -37,14 +37,10 @@ jobs:
         run: |
           HOUR=$(date -u +%H)
           case $HOUR in
-            02|03|04) RUN=00 ;;
-            05|06|07) RUN=03 ;;
-            08|09|10) RUN=06 ;;
-            11|12|13) RUN=09 ;;
-            14|15|16) RUN=12 ;;
-            17|18|19) RUN=15 ;;
-            20|21|22) RUN=18 ;;
-            23|00|01) RUN=21 ;;
+            03|04|05) RUN=00 ;;
+            09|10|11) RUN=06 ;;
+            15|16|17) RUN=12 ;;
+            21|22|23) RUN=18 ;;
           esac
           DATE=$(date -u +%Y%m%d)
           # set env variables
@@ -56,7 +52,7 @@ jobs:
       - name: Download ICON unstructured grid
         run: |
           mkdir -p data/grid
-          wget -q http://icon-downloads.mpimet.mpg.de/grids/public/edzw/icon_grid_0047_R19B07_L.nc -O data/grid/grid.nc
+          wget -q http://icon-downloads.mpimet.mpg.de/grids/public/edzw/icon_grid_0037_R03B07_N02.nc -O data/grid/grid.nc
           echo "✅ ICON grid heruntergeladen"
 
       - name: Download t2m GRIB2 files
@@ -65,21 +61,38 @@ jobs:
           cd data/t2m
           seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-d2-eps/grib/${{ env.RUN }}/t_2m/icon-d2-eps_germany_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_t_2m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_t_2m.grib2.bz2"
             wget -O t2m_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "t2m_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f t2m_${i_padded}.grib2.bz2
             fi
           '
-      
-      
+
+          seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
+            i_padded=$(printf "%03d" {})
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/t_2m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_t_2m.grib2.bz2"
+            wget -O t2m_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
+            if [ -f "t2m_${i_padded}.grib2.bz2" ]; then
+              bunzip2 -f t2m_${i_padded}.grib2.bz2
+            fi
+          '
+
       - name: Download tp GRIB2 files
         run: |
           mkdir -p data/tp
           cd data/tp
           seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-d2-eps/grib/${{ env.RUN }}/tot_prec/icon-d2-eps_germany_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_tot_prec.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_tot_prec.grib2.bz2"
+            wget -O tp_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
+            if [ -f "tp_${i_padded}.grib2.bz2" ]; then
+              bunzip2 -f tp_${i_padded}.grib2.bz2
+            fi
+          '
+
+          seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
+            i_padded=$(printf "%03d" {})
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/tot_prec/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_tot_prec.grib2.bz2"
             wget -O tp_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "tp_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f tp_${i_padded}.grib2.bz2
@@ -92,27 +105,21 @@ jobs:
           cd data/wind
           seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-d2-eps/grib/${{ env.RUN }}/vmax_10m/icon-d2-eps_germany_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_vmax_10m.grib2.bz2"
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_vmax_10m.grib2.bz2"
             wget -O wind_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
             if [ -f "wind_${i_padded}.grib2.bz2" ]; then
               bunzip2 -f wind_${i_padded}.grib2.bz2
             fi
           '
 
-      - name: Download snow GRIB2 files
-        run: |
-          mkdir -p data/snow
-          cd data/snow
-          seq 0 47 | xargs -n 1 -P 12 -I{} bash -c '
+          seq 48 3 120 | xargs -n 1 -P 12 -I{} bash -c '
             i_padded=$(printf "%03d" {})
-            URL="https://opendata.dwd.de/weather/nwp/icon-d2-eps/grib/${{ env.RUN }}/h_snow/icon-d2-eps_germany_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_h_snow.grib2.bz2"
-            wget -O snow_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
-            if [ -f "snow_${i_padded}.grib2.bz2" ]; then
-              bunzip2 -f snow_${i_padded}.grib2.bz2
+            URL="https://opendata.dwd.de/weather/nwp/icon-eu-eps/grib/${{ env.RUN }}/vmax_10m/icon-eu-eps_europe_icosahedral_single-level_${{ env.DATE }}${{ env.RUN }}_${i_padded}_2d_vmax_10m.grib2.bz2"
+            wget -O wind_${i_padded}.grib2.bz2 "$URL" || echo "Datei $URL nicht verfügbar, überspringe..."
+            if [ -f "wind_${i_padded}.grib2.bz2" ]; then
+              bunzip2 -f wind_${i_padded}.grib2.bz2
             fi
           '
-
-      
           
       - name: Upload T2M GRIB2 as artifact
         uses: actions/upload-artifact@v4
@@ -132,12 +139,6 @@ jobs:
           name: grib2-wind
           path: data/wind/
 
-      - name: Upload SNOW GRIB2 as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grib2-snow
-          path: data/snow/
-
       - name: Upload grid file as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -154,8 +155,8 @@ jobs:
     needs: fetch_and_generate
     strategy:
       matrix:
-        variable: [temp30, temp20, temp0, tp01, tp1, tp10, wind60, wind90, wind120, snow1, snow10, snow20]
-      max-parallel: 12
+        variable: [temp30, temp20, temp0, temp30_eu, temp20_eu, temp0_eu, tp10, tp30, tp100, tp10_eu, tp30_eu, tp100_eu, wind60, wind90, wind120, wind60_eu, wind90_eu, wind120_eu]
+      max-parallel: 18
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -176,8 +177,6 @@ jobs:
             echo "ARTIFACT_NAME=grib2-tp" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == wind* ]]; then
             echo "ARTIFACT_NAME=grib2-wind" >> $GITHUB_ENV
-          elif [[ "${{ matrix.variable }}" == snow* ]]; then
-            echo "ARTIFACT_NAME=grib2-snow" >> $GITHUB_ENV
           fi
 
       - name: Determine input folder
@@ -188,8 +187,6 @@ jobs:
             echo "INPUT_DIR=data/tp" >> $GITHUB_ENV
           elif [[ "${{ matrix.variable }}" == wind* ]]; then
             echo "INPUT_DIR=data/wind" >> $GITHUB_ENV
-          elif [[ "${{ matrix.variable }}" == snow* ]]; then
-            echo "INPUT_DIR=data/snow" >> $GITHUB_ENV
           fi
 
 
@@ -208,7 +205,7 @@ jobs:
 
       - name: Generate PNGs for ${{ matrix.variable }}
         run: |
-          mkdir -p icond2eps/${{ matrix.variable }}
+          mkdir -p iconeueps/${{ matrix.variable }}
           input_dir="data/${{ matrix.variable }}"
           if [ "${{ matrix.variable }}" = "temp30" ]; then
             input_dir="data/t2m"
@@ -216,28 +213,40 @@ jobs:
             input_dir="data/t2m"
           elif [ "${{ matrix.variable }}" = "temp0" ]; then
             input_dir="data/t2m"
-          elif [ "${{ matrix.variable }}" = "tp01" ]; then
-            input_dir="data/tp"
-          elif [ "${{ matrix.variable }}" = "tp1" ]; then
-            input_dir="data/tp"  
+          elif [ "${{ matrix.variable }}" = "temp30_eu" ]; then
+            input_dir="data/t2m"
+          elif [ "${{ matrix.variable }}" = "temp20_eu" ]; then
+            input_dir="data/t2m"
+          elif [ "${{ matrix.variable }}" = "temp0_eu" ]; then
+            input_dir="data/t2m"
           elif [ "${{ matrix.variable }}" = "tp10" ]; then
+            input_dir="data/tp"
+          elif [ "${{ matrix.variable }}" = "tp30" ]; then
+            input_dir="data/tp"  
+          elif [ "${{ matrix.variable }}" = "tp100" ]; then
+            input_dir="data/tp"
+          elif [ "${{ matrix.variable }}" = "tp10_eu" ]; then
+            input_dir="data/tp"
+          elif [ "${{ matrix.variable }}" = "tp30_eu" ]; then
+            input_dir="data/tp"  
+          elif [ "${{ matrix.variable }}" = "tp100_eu" ]; then
             input_dir="data/tp"
           elif [ "${{ matrix.variable }}" = "wind60" ]; then
             input_dir="data/wind" 
           elif [ "${{ matrix.variable }}" = "wind90" ]; then
             input_dir="data/wind"
           elif [ "${{ matrix.variable }}" = "wind120" ]; then
+            input_dir="data/wind"
+          elif [ "${{ matrix.variable }}" = "wind60_eu" ]; then
             input_dir="data/wind" 
-          elif [ "${{ matrix.variable }}" = "snow1" ]; then
-            input_dir="data/snow" 
-          elif [ "${{ matrix.variable }}" = "snow10" ]; then
-            input_dir="data/snow" 
-          elif [ "${{ matrix.variable }}" = "snow20" ]; then
-            input_dir="data/snow" 
+          elif [ "${{ matrix.variable }}" = "wind90_eu" ]; then
+            input_dir="data/wind"
+          elif [ "${{ matrix.variable }}" = "wind120_eu" ]; then
+            input_dir="data/wind"
           fi
           python scripts/generate_pngs.py \
             "$input_dir" \
-            icond2eps/${{ matrix.variable }} \
+            iconeueps/${{ matrix.variable }} \
             ${{ matrix.variable }} \
             data/grid/grid.nc
 
@@ -245,8 +254,8 @@ jobs:
       - name: Upload PNGs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: icond2eps-${{ matrix.variable }}
-          path: icond2eps/${{ matrix.variable }}
+          name: iconeueps-${{ matrix.variable }}
+          path: iconeueps/${{ matrix.variable }}
 
   deploy_to_r2:
     runs-on: ubuntu-latest
@@ -258,29 +267,29 @@ jobs:
       - name: Download all PNGs artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: icond2eps-*
-          path: icond2eps_raw
+          pattern: iconeueps-*
+          path: iconeueps_raw
 
       - name: Merge PNG folders into one structure
         run: |
-          mkdir -p icond2eps/${{ needs.fetch_and_generate.outputs.run }}
-          for d in icond2eps_raw/*; do
+          mkdir -p iconeueps/${{ needs.fetch_and_generate.outputs.run }}
+          for d in iconeueps_raw/*; do
             if [ -d "$d" ]; then
-              varname=$(basename "$d" | sed 's/^icond2eps-//')  # entfernt "icond2eps-" Prefix
-              mkdir -p icond2eps/${{ needs.fetch_and_generate.outputs.run }}/"$varname"
-              cp -r "$d"/* icond2eps/${{ needs.fetch_and_generate.outputs.run }}/"$varname"/ || true
+              varname=$(basename "$d" | sed 's/^iconeueps-//')  # entfernt "iconeueps-" Prefix
+              mkdir -p iconeueps/${{ needs.fetch_and_generate.outputs.run }}/"$varname"
+              cp -r "$d"/* iconeueps/${{ needs.fetch_and_generate.outputs.run }}/"$varname"/ || true
             fi
           done
 
       - name: Generate Metadata
         run: |
-          python scripts/generate_metadata.py icond2eps/${{ needs.fetch_and_generate.outputs.run }} ${{ needs.fetch_and_generate.outputs.run }} ${{ env.DATE }}
+          python scripts/generate_metadata.py iconeueps/${{ needs.fetch_and_generate.outputs.run }} ${{ needs.fetch_and_generate.outputs.run }} ${{ env.DATE }}
 
       - name: Clean old runs on R2 except current
         run: |
-          for run_folder in $(aws s3 ls s3://${{ secrets.R2_BUCKET }}/icon-d2-eps/ --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com | awk '{print $2}' | sed 's#/##'); do
+          for run_folder in $(aws s3 ls s3://${{ secrets.R2_BUCKET }}/icon-eu-eps/ --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com | awk '{print $2}' | sed 's#/##'); do
             if [ "$run_folder" != "${{ needs.fetch_and_generate.outputs.run }}/" ]; then
-              aws s3 rm s3://${{ secrets.R2_BUCKET }}/icon-d2-eps/$run_folder --recursive --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+              aws s3 rm s3://${{ secrets.R2_BUCKET }}/icon-eu-eps/$run_folder --recursive --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
             fi
           done
         env:
@@ -290,11 +299,11 @@ jobs:
       - name: Upload current run and metadata.json to R2
         run: |
           # Upload run folder
-          aws s3 sync ./icond2eps/${{ needs.fetch_and_generate.outputs.run }}/ s3://${{ secrets.R2_BUCKET }}/icon-d2-eps/${{ needs.fetch_and_generate.outputs.run }}/ \
+          aws s3 sync ./iconeueps/${{ needs.fetch_and_generate.outputs.run }}/ s3://${{ secrets.R2_BUCKET }}/icon-eu-eps/${{ needs.fetch_and_generate.outputs.run }}/ \
             --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
 
           # Upload metadata.json outside run folder
-          aws s3 cp ./icond2eps/metadata.json s3://${{ secrets.R2_BUCKET }}/icon-d2-eps/metadata.json \
+          aws s3 cp ./iconeueps/metadata.json s3://${{ secrets.R2_BUCKET }}/icon-eu-eps/metadata.json \
             --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
