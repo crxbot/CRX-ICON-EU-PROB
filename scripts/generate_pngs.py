@@ -12,7 +12,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as path_effects
 from scipy.ndimage import gaussian_filter
-from scipy.interpolate import griddata
+from scipy.interpolate import NearestNDInterpolator
 import warnings
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -137,11 +137,17 @@ if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100
     lat_reg = np.linspace(lat_min - buffer, lat_max + buffer, ny + 15)
     lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
 else:
-    grid_resolution = 0.065  # ~2,5km
+    grid_resolution = 0.03  # ~2,5km
     lon_min, lon_max, lat_min, lat_max = extent
-    lon_reg = np.arange(lon_min, lon_max + grid_resolution, grid_resolution)
-    lat_reg = np.arange(lat_min, lat_max + grid_resolution, grid_resolution)
+
+    nx = int(np.ceil((lon_max - lon_min) / grid_resolution)) + 1
+    ny = int(np.ceil((lat_max - lat_min) / grid_resolution)) + 1
+
+    lon_reg = np.linspace(lon_min, lon_max, nx)
+    lat_reg = np.linspace(lat_min, lat_max, ny)
+
     lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
+
 
 acc_tp_prev = None  # für akkumulierten Niederschlag
 
@@ -190,12 +196,22 @@ for filename in sorted(os.listdir(data_dir)):
         # Zähle, wie viele Member >= Schwelle sind, dann in Prozent
         data_prob = (data >= thresholds[var_type]).sum(axis=0) / data.shape[0] * 100
 
-    # --------------------------
-    # Interpolation auf reguläres Grid
-    # --------------------------
+    # ------------------------------
+    # Interpolation auf regelmäßiges Grid
+    # ------------------------------
     print("Interpoliere auf reguläres Grid...")
+
+    # Punkte des ursprünglichen unstrukturierten Grids
     points = np.column_stack([lon_grid.ravel(), lat_grid.ravel()])
-    data_grid = griddata(points, data_prob.ravel(), (lon_grid2d, lat_grid2d), method='nearest')
+
+    # Nur gültige Werte verwenden
+    valid_mask = np.isfinite(data_prob.ravel())
+    points_valid = points[valid_mask]
+    data_valid = data_prob.ravel()[valid_mask]
+
+    # Nearest Neighbor Interpolation (schnell und ausreichend)
+    interpolator = NearestNDInterpolator(points_valid, data_valid)
+    data_grid = interpolator(lon_grid2d, lat_grid2d)
 
     # --------------------------
     # Figure erstellen
@@ -220,14 +236,14 @@ for filename in sorted(os.listdir(data_dir)):
         ax.set_aspect('auto')
 
     if var_type in ["temp30","temp20","temp0"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=temp_colors, norm=temp_norm, shading="auto")
     elif var_type in ["temp30_eu","temp20_eu","temp0_eu"]:
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=temp_colors, norm=temp_norm, shading="auto")
     elif var_type in ["tp10", "tp30", "tp100"]:
-        data_smooth = gaussian_filter(data_grid, sigma=1.2)
+        data_smooth = gaussian_filter(data_grid, sigma=20)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=tp_colors, norm=tp_norm, shading="auto")
     elif var_type in ["tp10_eu", "tp30_eu", "tp100_eu"]:
