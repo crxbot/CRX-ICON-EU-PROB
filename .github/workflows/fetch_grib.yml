@@ -240,35 +240,17 @@ jobs:
             input_dir="data/t2m"
           elif [ "${{ matrix.variable }}" = "temp0" ]; then
             input_dir="data/t2m"
-          elif [ "${{ matrix.variable }}" = "temp30_eu" ]; then
-            input_dir="data/t2m"
-          elif [ "${{ matrix.variable }}" = "temp20_eu" ]; then
-            input_dir="data/t2m"
-          elif [ "${{ matrix.variable }}" = "temp0_eu" ]; then
-            input_dir="data/t2m"
           elif [ "${{ matrix.variable }}" = "tp10" ]; then
             input_dir="data/tp"
           elif [ "${{ matrix.variable }}" = "tp30" ]; then
             input_dir="data/tp"  
           elif [ "${{ matrix.variable }}" = "tp100" ]; then
             input_dir="data/tp"
-          elif [ "${{ matrix.variable }}" = "tp10_eu" ]; then
-            input_dir="data/tp"
-          elif [ "${{ matrix.variable }}" = "tp30_eu" ]; then
-            input_dir="data/tp"  
-          elif [ "${{ matrix.variable }}" = "tp100_eu" ]; then
-            input_dir="data/tp"
           elif [ "${{ matrix.variable }}" = "wind60" ]; then
             input_dir="data/wind" 
           elif [ "${{ matrix.variable }}" = "wind90" ]; then
             input_dir="data/wind"
           elif [ "${{ matrix.variable }}" = "wind120" ]; then
-            input_dir="data/wind"
-          elif [ "${{ matrix.variable }}" = "wind60_eu" ]; then
-            input_dir="data/wind" 
-          elif [ "${{ matrix.variable }}" = "wind90_eu" ]; then
-            input_dir="data/wind"
-          elif [ "${{ matrix.variable }}" = "wind120_eu" ]; then
             input_dir="data/wind"
           fi
           python scripts/generate_pngs.py \
