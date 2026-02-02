@@ -96,7 +96,7 @@ wind_norm = BoundaryNorm(wind_bounds, wind_colors.N)
 # --------------------------
 # Schwellenwerte
 # --------------------------
-thresholds = {"temp30":30,"temp20":20,"temp0":0,"temp30_eu":30,"temp20_eu":20,"temp0_eu":0,"tp10":10.0, "tp30":30.0, "tp100":100.0, "tp10_eu":10.0, "tp30_eu":30.0, "tp100_eu":100.0, "wind60":60.0, "wind90":90.0, "wind120":120.0, "wind60_eu":60.0, "wind90_eu":90.0, "wind120_eu":120.0}
+thresholds = {"temp30":30,"temp20":20,"temp0":0,"tp01":0.1, "tp1":1.0, "tp10":10.0, "wind60":60.0, "wind90":90.0, "wind120":120.0}
 
 # --------------------------
 # Kartenparameter
@@ -127,29 +127,19 @@ if isinstance(lat_grid, np.ma.MaskedArray):
 print(f"Grid hat {len(lon_grid)} Punkte")
 
 # Erstelle reguläres Grid für Interpolation
-if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
-    grid_resolution = 0.13  # ~12km
-    lon_min, lon_max, lat_min, lat_max = extent_eu
-    buffer = grid_resolution * 20
-    nx = int(round((lon_max - lon_min) / grid_resolution)) + 1
-    ny = int(round((lat_max - lat_min) / grid_resolution)) + 1
-    lon_reg = np.linspace(lon_min - buffer, lon_max + buffer, nx + 15)
-    lat_reg = np.linspace(lat_min - buffer, lat_max + buffer, ny + 15)
-    lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
-else:
-    grid_resolution = 0.03  # ~2,5km
-    lon_min, lon_max, lat_min, lat_max = extent
+grid_resolution = 0.03  # ~2,5km
+lon_min, lon_max, lat_min, lat_max = extent
 
-    nx = int(np.ceil((lon_max - lon_min) / grid_resolution)) + 1
-    ny = int(np.ceil((lat_max - lat_min) / grid_resolution)) + 1
+nx = int(np.ceil((lon_max - lon_min) / grid_resolution)) + 1
+ny = int(np.ceil((lat_max - lat_min) / grid_resolution)) + 1
 
-    lon_reg = np.linspace(lon_min, lon_max, nx)
-    lat_reg = np.linspace(lat_min, lat_max, ny)
+lon_reg = np.linspace(lon_min, lon_max, nx)
+lat_reg = np.linspace(lat_min, lat_max, ny)
 
-    lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
+lon_grid2d, lat_grid2d = np.meshgrid(lon_reg, lat_reg)
 
-
-acc_tp_prev = None  # für akkumulierten Niederschlag
+previous_tp = None
+file_counter = 0 
 
 # --------------------------
 # GRIB Dateien durchgehen
@@ -161,22 +151,37 @@ for filename in sorted(os.listdir(data_dir)):
     path = os.path.join(data_dir, filename)
     ds = cfgrib.open_dataset(path)
 
+     # Zähler erhöhen
+    file_counter += 1
+
     # --------------------------
     # Variable auswählen
     # --------------------------
-    if var_type in ["temp30","temp20","temp0","temp30_eu","temp20_eu","temp0_eu"]:
+    if var_type in ["temp30","temp20","temp0"]:
         if "t2m" not in ds:
             print(f"Keine t2m in {filename}")
             continue
         data = ds["t2m"].values - 273.15
-    elif var_type in ["tp10", "tp30", "tp100", "tp10_eu", "tp30_eu", "tp100_eu"]:
-    # Suche die Niederschlagsvariable
+    elif var_type in ["tp01", "tp1", "tp10"]:
+
+        if file_counter > 48:
+            print(f"Datei {filename} übersprungen, da über 48 Stunden Prognosezeit.")
+            continue
+
         if "tp" not in ds:
             print(f"Keine Niederschlagsvariable in {filename}")
             continue
-        # Akkumulation direkt
-        data = ds["tp"].values  # shape: (member, npoints)
-    elif var_type in ["wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu"]:
+
+        tp_current = ds["tp"].values 
+
+        if previous_tp is not None:
+            data = tp_current - previous_tp
+        else:
+            data = tp_current
+        
+        previous_tp = tp_current
+
+    elif var_type in ["wind60", "wind90", "wind120"]:
         if "fg10" not in ds:
             print(f"Keine 10m Windkomponenten in {filename} ds.keys(): {ds.keys()}")
             continue
@@ -189,7 +194,7 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     # Ensemble zu Wahrscheinlichkeit
     # --------------------------
-    if var_type in ["temp0","temp0_eu"]:
+    if var_type in ["temp0"]:
     # Zähle, wie viele Member < 0°C sind, dann in Prozent
         data_prob = (data < thresholds[var_type]).sum(axis=0) / data.shape[0] * 100
     else:
@@ -216,83 +221,50 @@ for filename in sorted(os.listdir(data_dir)):
     # --------------------------
     # Figure erstellen
     # --------------------------
-    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
-        scale = 0.9
-        fig = plt.figure(figsize=(FIG_W_PX/100*scale, FIG_H_PX/100*scale), dpi=100)
-        shift_up = 0.02
-        ax = fig.add_axes([0.0, BOTTOM_AREA_PX / FIG_H_PX + shift_up, 1.0, TOP_AREA_PX / FIG_H_PX],
-                        projection=ccrs.PlateCarree())
-        ax.set_extent(extent_eu)
-        ax.set_axis_off()
-        ax.set_aspect('auto')
-    else:
-        scale = 0.9
-        fig = plt.figure(figsize=(FIG_W_PX/100*scale, FIG_H_PX/100*scale), dpi=100)
-        shift_up = 0.02
-        ax = fig.add_axes([0.0, BOTTOM_AREA_PX/FIG_H_PX + shift_up, 1.0, TOP_AREA_PX/FIG_H_PX],
-                        projection=ccrs.PlateCarree())
-        ax.set_extent(extent)
-        ax.set_axis_off()
-        ax.set_aspect('auto')
+    scale = 0.9
+    fig = plt.figure(figsize=(FIG_W_PX/100*scale, FIG_H_PX/100*scale), dpi=100)
+    shift_up = 0.02
+    ax = fig.add_axes([0.0, BOTTOM_AREA_PX/FIG_H_PX + shift_up, 1.0, TOP_AREA_PX/FIG_H_PX],
+                    projection=ccrs.PlateCarree())
+    ax.set_extent(extent)
+    ax.set_axis_off()
+    ax.set_aspect('auto')
 
     if var_type in ["temp30","temp20","temp0"]:
         data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=temp_colors, norm=temp_norm, shading="auto")
-    elif var_type in ["temp30_eu","temp20_eu","temp0_eu"]:
-        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
-                        cmap=temp_colors, norm=temp_norm, shading="auto")
-    elif var_type in ["tp10", "tp30", "tp100"]:
+    elif var_type in ["tp01", "tp1", "tp10"]:
         data_smooth = gaussian_filter(data_grid, sigma=20)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
-                        cmap=tp_colors, norm=tp_norm, shading="auto")
-    elif var_type in ["tp10_eu", "tp30_eu", "tp100_eu"]:
-        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
                         cmap=tp_colors, norm=tp_norm, shading="auto")
     elif var_type in ["wind60", "wind90", "wind120"]:
         data_smooth = gaussian_filter(data_grid, sigma=2.0)
         im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_smooth,
                         cmap=wind_colors, norm=wind_norm, shading="auto")
-    elif var_type in ["wind60_eu", "wind90_eu", "wind120_eu"]:
-        im = ax.pcolormesh(lon_grid2d, lat_grid2d, data_grid,
-                        cmap=wind_colors, norm=wind_norm, shading="auto")
+    # --------------------------
+    # Karten-Features
+    ax.add_feature(cfeature.STATES.with_scale("10m"), edgecolor="#2C2C2C", linewidth=1)
+    ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
+    ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
 
-    if var_type in ["temp30_eu","temp20_eu","temp0_eu", "tp10_eu", "tp30_eu", "tp100_eu", "wind60_eu", "wind90_eu", "wind120_eu"]:
-        ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
-        ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
+    for _, city in cities.iterrows():
+        ax.plot(city["lon"], city["lat"], "o", markersize=6,
+                markerfacecolor="black", markeredgecolor="white", markeredgewidth=1.5)
+        txt = ax.text(city["lon"]+0.1, city["lat"]+0.1, city["name"], fontsize=9,
+                    color="black", weight="bold")
+        txt.set_path_effects([path_effects.withStroke(linewidth=1.5, foreground="white")])
 
-        for _, city in eu_cities.iterrows():
-            ax.plot(city["lon"], city["lat"], "o", markersize=6,
-                    markerfacecolor="black", markeredgecolor="white", markeredgewidth=1.5)
-            txt = ax.text(city["lon"]+0.1, city["lat"]+0.1, city["name"], fontsize=9,
-                        color="black", weight="bold")
-            txt.set_path_effects([path_effects.withStroke(linewidth=1.5, foreground="white")])
-
-        ax.add_patch(mpatches.Rectangle((0,0),1,1, transform=ax.transAxes,
-                                        fill=False, color="black", linewidth=2))
-
-    else:
-        ax.add_feature(cfeature.STATES.with_scale("10m"), edgecolor="#2C2C2C", linewidth=1)
-        ax.add_feature(cfeature.BORDERS.with_scale("10m"), edgecolor="black", linewidth=0.7)
-        ax.add_feature(cfeature.COASTLINE.with_scale("10m"), edgecolor="black", linewidth=0.7)
-
-        for _, city in cities.iterrows():
-            ax.plot(city["lon"], city["lat"], "o", markersize=6,
-                    markerfacecolor="black", markeredgecolor="white", markeredgewidth=1.5)
-            txt = ax.text(city["lon"]+0.1, city["lat"]+0.1, city["name"], fontsize=9,
-                        color="black", weight="bold")
-            txt.set_path_effects([path_effects.withStroke(linewidth=1.5, foreground="white")])
-
-        ax.add_patch(mpatches.Rectangle((0,0),1,1, transform=ax.transAxes,
-                                        fill=False, color="black", linewidth=2))
+    ax.add_patch(mpatches.Rectangle((0,0),1,1, transform=ax.transAxes,
+                                    fill=False, color="black", linewidth=2))
 
     # --------------------------
     # Colorbar
     # --------------------------
     legend_h_px = 50
     legend_bottom_px = 45
-    if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu", "tp10", "tp30", "tp100", "tp10_eu", "tp30_eu", "tp100_eu", "wind60", "wind90", "wind120", "wind60_eu", "wind90_eu", "wind120_eu"]:
-        bounds = temp_bounds if var_type in ["temp30","temp20","temp0", "temp30_eu", "temp20_eu", "temp0_eu"] else tp_bounds if var_type in ["tp10", "tp30", "tp100", "tp10_eu", "tp30_eU", "tp100_eu"] else wind_bounds
+    if var_type in ["temp30","temp20","temp0", "tp01", "tp1", "tp10", "wind60", "wind90", "wind120"]:
+        bounds = temp_bounds if var_type in ["temp30","temp20","temp0"] else tp_bounds if var_type in ["tp01", "tp1", "tp10"] else wind_bounds
         cbar_ax = fig.add_axes([0.03, legend_bottom_px / FIG_H_PX, 0.94, legend_h_px / FIG_H_PX])
         cbar = fig.colorbar(im, cax=cbar_ax, orientation="horizontal", ticks=bounds)
         cbar.ax.tick_params(colors="black", labelsize=7)
@@ -345,21 +317,12 @@ for filename in sorted(os.listdir(data_dir)):
         "temp30": "Temperatur >30°C (%)",
         "temp20": "Temperatur >20°C (%)",
         "temp0": "Temperatur <0°C (%)",
-        "temp30_eu": "Temperatur >30°C (%), Europa",
-        "temp20_eu": "Temperatur >20°C (%), Europa",
-        "temp0_eu": "Temperatur <0°C (%), Europa",
-        "tp10": "Akk. Niederschlag >10mm (%)",
-        "tp30": "Akk. Niederschlag >30mm (%)",
-        "tp100": "Akk. Niederschlag >100mm (%)",
-        "tp10_eu": "Akk. Niederschlag >10mm (%), Europa",
-        "tp30_eu": "Akk. Niederschlag >30mm (%), Europa",
-        "tp100_eu": "Akk. Niederschlag >100mm (%), Europa",
+        "tp01": "Niederschlag, 1Std >0.1mm (%)",
+        "tp1": "Niederschlag, 1Std >1mm (%)",
+        "tp10": "Niederschlag, 1Std >10mm (%)",
         "wind60": "Windböen >60 km/h (%)",
         "wind90": "Windböen >90 km/h (%)",
         "wind120": "Windböen >120 km/h (%)",
-        "wind60_eu": "Windböen >60 km/h (%), Europa",
-        "wind90_eu": "Windböen >90 km/h (%), Europa",
-        "wind120_eu": "Windböen >120 km/h (%), Europa",
     }
     left_text = footer_texts.get(var_type, var_type)
     if run_time_utc is not None:
