@@ -182,7 +182,7 @@ jobs:
     needs: fetch_and_generate
     strategy:
       matrix:
-        variable: [temp30, temp20, temp0, tp10, tp30, tp100, wind60, wind90, wind120]
+        variable: [temp30, temp20, temp0, tp01, tp1, tp10, wind60, wind90, wind120]
       max-parallel: 9
     steps:
       - name: Checkout Repo
