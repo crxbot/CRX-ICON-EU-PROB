@@ -164,7 +164,7 @@ for filename in sorted(os.listdir(data_dir)):
         data = ds["t2m"].values - 273.15
     elif var_type in ["tp01", "tp1", "tp10"]:
 
-        if file_counter > 48:
+        if file_counter > 49:
             print(f"Datei {filename} übersprungen, da über 48 Stunden Prognosezeit.")
             continue
 
