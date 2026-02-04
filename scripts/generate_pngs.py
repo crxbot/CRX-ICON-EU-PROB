@@ -164,22 +164,57 @@ for filename in sorted(os.listdir(data_dir)):
         data = ds["t2m"].values - 273.15
     elif var_type in ["tp01", "tp1", "tp10"]:
 
-        if file_counter > 49:
-            print(f"Datei {filename} übersprungen, da über 48 Stunden Prognosezeit.")
+        delta_hours = 6
+
+        all_files = sorted([f for f in os.listdir(data_dir) if f.endswith(".grib2")])
+        all_ds = {f: cfgrib.open_dataset(os.path.join(data_dir, f)) for f in all_files}
+
+        ds_now = all_ds[filename]
+
+        if "tp" not in ds_now:
+            print(f"Keine tp in {filename}")
             continue
 
-        if "tp" not in ds:
-            print(f"Keine Niederschlagsvariable in {filename}")
-            continue
+        # aktuelle Forecast-Stunde
+        step_now = int(ds_now["step"].values / np.timedelta64(1, "h"))
 
-        tp_current = ds["tp"].values 
+        # letzter Zeitschritt (wie in deinem Original!)
+        tp_now_last = np.clip(ds_now["tp"].values, 0, None)
 
-        if previous_tp is not None:
-            data = tp_current - previous_tp
+        # < 6h → einfach akkumuliert
+        if step_now < delta_hours:
+            data = tp_now_last
+            print(f"{filename}: {step_now}h akkumuliert (noch <6h)")
+
         else:
-            data = tp_current
-        
-        previous_tp = tp_current
+            # wir suchen die Datei mit step = step_now - 6
+            target_step = step_now - delta_hours
+
+            ds_prev = None
+            prev_filename = None
+
+            for f, ds in all_ds.items():
+                step = int(ds["step"].values / np.timedelta64(1, "h"))
+                if step == target_step:
+                    ds_prev = ds
+                    prev_filename = f
+                    break
+
+            if ds_prev is None:
+                print(f"Keine Datei für {target_step}h gefunden ({filename})")
+                continue
+
+            tp_prev_last = np.clip(ds_prev["tp"].values, 0, None)
+            data = np.maximum(tp_now_last - tp_prev_last, 0)
+
+            print(
+                f"{filename}: 6h Niederschlag berechnet "
+                f"({prev_filename} → {filename})"
+            )
+
+        print(f"OUTPUT data.shape: {data.shape}")
+
+
 
     elif var_type in ["wind60", "wind90", "wind120"]:
         if "fg10" not in ds:
@@ -317,9 +352,9 @@ for filename in sorted(os.listdir(data_dir)):
         "temp30": "Temperatur >30°C (%)",
         "temp20": "Temperatur >20°C (%)",
         "temp0": "Temperatur <0°C (%)",
-        "tp01": "Niederschlag, 1Std >0.1mm (%)",
-        "tp1": "Niederschlag, 1Std >1mm (%)",
-        "tp10": "Niederschlag, 1Std >10mm (%)",
+        "tp01": "Niederschlag, 6Std >0.1mm (%)",
+        "tp1": "Niederschlag, 6Std >1mm (%)",
+        "tp10": "Niederschlag, 6Std >10mm (%)",
         "wind60": "Windböen >60 km/h (%)",
         "wind90": "Windböen >90 km/h (%)",
         "wind120": "Windböen >120 km/h (%)",
